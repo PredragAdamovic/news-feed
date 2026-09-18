@@ -76,7 +76,7 @@ custom scheme, so there is no half-measure worth shipping here.
 ```
 dev.predrag.newsfeed
 ├── core/          NewsError, NewsResult — the vocabulary for failure
-├── domain/        Article, ArticlePage, NewsRepository (interface only)
+├── domain/        Article, ArticlePage, NewsRepository (interface), use cases
 ├── data/          NewsAPI client, DTOs, mapper, on-disk cache, repository impl
 ├── di/            Hilt modules
 └── ui/
@@ -93,12 +93,17 @@ build configuration without changing a single decision at this size.
 
 ### Architecture decisions, and why
 
-**MVVM with a domain boundary, not full Clean Architecture.** There is a `NewsRepository`
-interface in `domain` that the view models depend on, and an implementation in `data`. That
-boundary earns its keep: it is what lets the paging tests run against a fake in
-milliseconds, and it is the seam along which the API could be swapped. What I did *not* add
-is a use-case class per operation — with two operations that are already one line each, they
-would be indirection with no reader benefit.
+**MVVM over a Clean-style domain layer.** `domain` holds the models, the `NewsRepository`
+contract and the two use cases the view models call; `data` holds the implementation. The
+view models depend on `GetTopHeadlinesUseCase` and `GetArticleByIdUseCase` and never see the
+repository at all, which is what keeps `ui` from reaching into `data` — a rule that is easy
+to state and easy to break, and the reason `FIRST_PAGE` sits on the domain contract rather
+than on the implementation that happens to define it.
+
+The two use cases are thin, and that is worth saying out loud: with two one-line operations
+there is no logic for them to own yet. What they buy is the seam. The first operation that
+has to combine sources — headlines minus what the reader has bookmarked, say — belongs
+neither in the repository nor in the view model, and this is where it goes.
 
 **A sealed `NewsError`, not exceptions in the UI.** The screen says different things for
 "you are offline", "your key is missing" and "the service answered with 401", and offers a
@@ -196,9 +201,8 @@ local store of every article ever seen, and the second is not worth it for a hea
   project and a `google-services.json`, and committing one tied to my account would break
   the build for anyone else and put my project id in the repo. The plumbing is two plugins
   and an `initialize` call; I would add it against the team's own project.
-- **Use-case classes.** Explained above: two one-line operations.
-- **A multi-module split.** Same reasoning — real value at three teams and a long build, no
-  value at this size.
+- **A multi-module split.** Real value at three teams and a long build, no value at this
+  size. The dependency rule is already enforceable by reading imports.
 - **Image loading, animations, pixel-level design.** Explicitly not what the task is about.
 - **`content` from the API.** The free plan truncates it to ~200 characters with a
   `[+N chars]` suffix, so showing it would look broken. The detail screen uses `description`

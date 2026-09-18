@@ -4,9 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.predrag.newsfeed.core.NewsResult
-import dev.predrag.newsfeed.data.NewsRepositoryImpl.Companion.FIRST_PAGE
 import dev.predrag.newsfeed.domain.model.Article
-import dev.predrag.newsfeed.domain.repository.NewsRepository
+import dev.predrag.newsfeed.domain.repository.NewsRepository.Companion.FIRST_PAGE
+import dev.predrag.newsfeed.domain.usecase.GetTopHeadlinesUseCase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +17,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ArticleListViewModel @Inject constructor(
-    private val repository: NewsRepository,
+    private val getTopHeadlines: GetTopHeadlinesUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ArticleListUiState())
@@ -68,7 +68,7 @@ class ArticleListViewModel @Inject constructor(
                 )
             }
 
-            when (val result = repository.topHeadlines(FIRST_PAGE)) {
+            when (val result = getTopHeadlines(FIRST_PAGE)) {
                 is NewsResult.Success -> {
                     nextPage = FIRST_PAGE + 1
                     _uiState.update {
@@ -102,7 +102,7 @@ class ArticleListViewModel @Inject constructor(
         appendJob = viewModelScope.launch {
             _uiState.update { it.copy(isAppending = true, appendError = null) }
 
-            when (val result = repository.topHeadlines(nextPage)) {
+            when (val result = getTopHeadlines(nextPage)) {
                 is NewsResult.Success -> {
                     nextPage++
                     _uiState.update { state ->

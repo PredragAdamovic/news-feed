@@ -6,7 +6,6 @@ import dev.predrag.newsfeed.domain.model.ArticlePage
 
 interface NewsRepository {
 
-    /** Pages are 1-based, matching the API. */
     suspend fun topHeadlines(page: Int): NewsResult<ArticlePage>
 
     /**
@@ -14,4 +13,9 @@ interface NewsRepository {
      * the cache holds the article.
      */
     suspend fun articleById(id: String): Article?
+
+    companion object {
+        /** Pages are 1-based, matching the API. */
+        const val FIRST_PAGE = 1
+    }
 }

@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.predrag.newsfeed.domain.model.Article
-import dev.predrag.newsfeed.domain.repository.NewsRepository
+import dev.predrag.newsfeed.domain.usecase.GetArticleByIdUseCase
 import dev.predrag.newsfeed.ui.navigation.ArticleDetailRoute
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +26,7 @@ data class ArticleDetailUiState(
 @HiltViewModel
 class ArticleDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    repository: NewsRepository,
+    getArticleById: GetArticleByIdUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ArticleDetailUiState())
@@ -36,7 +36,7 @@ class ArticleDetailViewModel @Inject constructor(
         val articleId: String = savedStateHandle[ArticleDetailRoute.ARG_ARTICLE_ID] ?: ""
         viewModelScope.launch {
             _uiState.value = ArticleDetailUiState(
-                article = repository.articleById(articleId),
+                article = getArticleById(articleId),
                 isLoading = false,
             )
         }

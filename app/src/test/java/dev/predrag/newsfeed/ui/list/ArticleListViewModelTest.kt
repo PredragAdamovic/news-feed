@@ -1,6 +1,7 @@
 package dev.predrag.newsfeed.ui.list
 
 import dev.predrag.newsfeed.core.NewsError
+import dev.predrag.newsfeed.domain.usecase.GetTopHeadlinesUseCase
 import dev.predrag.newsfeed.util.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -21,11 +22,13 @@ class ArticleListViewModelTest {
 
     private val repository = FakeNewsRepository()
 
+    private fun viewModel() = ArticleListViewModel(GetTopHeadlinesUseCase(repository))
+
     @Test
     fun `loads the first page on creation`() = runTest {
         repository.succeedWith(page = 1, articles = articles("a", "b"))
 
-        val viewModel = ArticleListViewModel(repository)
+        val viewModel = viewModel()
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -38,7 +41,7 @@ class ArticleListViewModelTest {
     fun `a first-page failure with nothing loaded becomes a full-screen error`() = runTest {
         repository.failWith(page = 1, error = NewsError.NoConnection)
 
-        val viewModel = ArticleListViewModel(repository)
+        val viewModel = viewModel()
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -51,7 +54,7 @@ class ArticleListViewModelTest {
         repository.succeedWith(page = 1, articles = articles("a", "b"))
         repository.succeedWith(page = 2, articles = articles("c", "d"))
 
-        val viewModel = ArticleListViewModel(repository)
+        val viewModel = viewModel()
         advanceUntilIdle()
 
         viewModel.onNearEndOfList()
@@ -65,7 +68,7 @@ class ArticleListViewModelTest {
         repository.succeedWith(page = 1, articles = articles("a", "b"))
         repository.failWith(page = 2)
 
-        val viewModel = ArticleListViewModel(repository)
+        val viewModel = viewModel()
         advanceUntilIdle()
 
         viewModel.onNearEndOfList()
@@ -83,7 +86,7 @@ class ArticleListViewModelTest {
         repository.succeedWith(page = 1, articles = articles("a", "b"))
         repository.failWith(page = 2)
 
-        val viewModel = ArticleListViewModel(repository)
+        val viewModel = viewModel()
         advanceUntilIdle()
         viewModel.onNearEndOfList()
         advanceUntilIdle()
@@ -100,7 +103,7 @@ class ArticleListViewModelTest {
         repository.succeedWith(page = 1, articles = articles("a"))
         repository.failWith(page = 2)
 
-        val viewModel = ArticleListViewModel(repository)
+        val viewModel = viewModel()
         advanceUntilIdle()
         viewModel.onNearEndOfList()
         advanceUntilIdle()
@@ -118,7 +121,7 @@ class ArticleListViewModelTest {
     fun `paging stops once the API reports the last page`() = runTest {
         repository.succeedWith(page = 1, articles = articles("a"), isLastPage = true)
 
-        val viewModel = ArticleListViewModel(repository)
+        val viewModel = viewModel()
         advanceUntilIdle()
 
         repeat(3) { viewModel.onNearEndOfList() }
@@ -133,7 +136,7 @@ class ArticleListViewModelTest {
         repository.succeedWith(page = 1, articles = articles("a", "b"))
         repository.succeedWith(page = 2, articles = articles("b", "c"))
 
-        val viewModel = ArticleListViewModel(repository)
+        val viewModel = viewModel()
         advanceUntilIdle()
         viewModel.onNearEndOfList()
         advanceUntilIdle()
@@ -145,7 +148,7 @@ class ArticleListViewModelTest {
     fun `a failed refresh keeps the list and reports the error transiently`() = runTest {
         repository.succeedWith(page = 1, articles = articles("a", "b"))
 
-        val viewModel = ArticleListViewModel(repository)
+        val viewModel = viewModel()
         advanceUntilIdle()
 
         repository.failWith(page = 1)
@@ -166,7 +169,7 @@ class ArticleListViewModelTest {
         val savedAt = Instant.parse("2026-09-17T10:00:00Z")
         repository.serveFromCache(page = 1, articles = articles("a"), savedAt = savedAt)
 
-        val viewModel = ArticleListViewModel(repository)
+        val viewModel = viewModel()
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -179,7 +182,7 @@ class ArticleListViewModelTest {
     fun `an empty successful response is an empty state, not an error`() = runTest {
         repository.succeedWith(page = 1, articles = emptyList(), isLastPage = true)
 
-        val viewModel = ArticleListViewModel(repository)
+        val viewModel = viewModel()
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
