@@ -10,4 +10,8 @@ data class ArticlePage(
     val page: Int,
     val isLastPage: Boolean,
     val cachedAt: Instant? = null,
-)
+) {
+    companion object {
+        const val FIRST_PAGE = 1
+    }
+}

@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.predrag.newsfeed.core.NewsResult
 import dev.predrag.newsfeed.domain.model.Article
-import dev.predrag.newsfeed.domain.repository.NewsRepository.Companion.FIRST_PAGE
+import dev.predrag.newsfeed.domain.model.ArticlePage.Companion.FIRST_PAGE
 import dev.predrag.newsfeed.domain.usecase.GetTopHeadlinesUseCase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -52,18 +52,11 @@ fun NewsFeedApp() {
 }
 
 /**
- * Routes a `myapp://article/{id}` intent that arrives while the app is already running.
+ * Routes a link that arrives while the app is already running. The NavHost reads only the
+ * intent it was created with, so a later one has to reach the NavController by hand.
  *
- * The activity is singleTask, so such an intent reaches [android.app.Activity.onNewIntent]
- * instead of starting a second copy of the app — but nothing reads it from there, and the
- * user would sit on whatever screen they were already on. Forwarding it to the NavController
- * is what actually performs the navigation.
- *
- * singleTop is not enough: a link arrives with FLAG_ACTIVITY_NEW_TASK and an intent that does
- * not match the task's root, and the activity is then rebuilt rather than reused.
- *
- * The listener is removed with the composition, so it cannot outlive the NavController it
- * captures.
+ * singleTop would not do: a link arrives with FLAG_ACTIVITY_NEW_TASK and an intent that does
+ * not match the task's root, and the activity is rebuilt rather than reused.
  */
 @Composable
 private fun NavController.HandleDeepLinksWhileRunning() {

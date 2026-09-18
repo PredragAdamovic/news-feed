@@ -91,10 +91,10 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(libs.kotlinx.serialization.json)
 
-    // HTTP inspector. The real library is debug-only; release gets the no-op, so none of it
-    // ships — see AppModule for how the interceptor is provided.
+    // HTTP inspector, debug only. AppModule asks for the interceptor through a function
+    // that each source set defines for itself, so release references nothing to stub out
+    // and carries no Chucker classes at all.
     debugImplementation(libs.chucker)
-    releaseImplementation(libs.chucker.no.op)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 

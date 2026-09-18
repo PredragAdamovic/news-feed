@@ -14,23 +14,21 @@ git clone <this repo>
 cd news-feed
 ```
 
-Add your NewsAPI key to `local.properties` in the project root (the file is git-ignored —
-see `local.properties.example`):
-
-```properties
-NEWS_API_KEY=your_key_here
-```
-
-A free key takes about a minute at <https://newsapi.org/register>.
-
 ```bash
 ./gradlew assembleDebug        # or open the project in Android Studio and run
 ./gradlew testDebugUnitTest    # 18 unit tests
 ```
 
-**Without a key the app still runs.** It starts, detects the empty key before making a
-request, and shows a screen telling you what to add and where. That felt better than a build
-failure for anyone cloning this to look around.
+**There is nothing to set up.** A free-tier NewsAPI key is checked into
+`app/build.gradle.kts` and used by default. Put your own in `local.properties` (git-ignored,
+see `local.properties.example`) to override it:
+
+```properties
+NEWS_API_KEY=your_key_here
+```
+
+A free key takes about a minute at <https://newsapi.org/register>. With neither, the app
+detects the empty value before making a request and shows a screen saying what to add.
 
 Minimum SDK 24, target 36, compiled against 37.
 
@@ -90,8 +88,9 @@ dev.predrag.newsfeed
     ├── list/      ArticleListScreen + ViewModel + UiState
     ├── detail/    ArticleDetailScreen + ViewModel
     ├── common/    loading / error / empty / stale views, error copy
-    ├── navigation/routes and the deep-link pattern
-    └── util/      date formatting, Custom Tabs
+    ├── navigation/routes and the two deep-link patterns
+    ├── theme/     colour scheme
+    └── util/      date formatting, Custom Tabs, sharing
 ```
 
 One module. The layers are packages, and the dependency rule is enforced by the `domain`
@@ -104,13 +103,18 @@ build configuration without changing a single decision at this size.
 contract and the two use cases the view models call; `data` holds the implementation. The
 view models depend on `GetTopHeadlinesUseCase` and `GetArticleByIdUseCase` and never see the
 repository at all, which is what keeps `ui` from reaching into `data` — a rule that is easy
-to state and easy to break, and the reason `FIRST_PAGE` sits on the domain contract rather
-than on the implementation that happens to define it.
+to state and easy to break. It was broken here once: `FIRST_PAGE` used to be read from
+`NewsRepositoryImpl.Companion`, so `ui` imported a constant out of `data` and compiled
+perfectly well. It now sits on `ArticlePage`, where both layers can see it without either
+reaching past the domain.
 
 The two use cases are thin, and that is worth saying out loud: with two one-line operations
 there is no logic for them to own yet. What they buy is the seam. The first operation that
 has to combine sources — headlines minus what the reader has bookmarked, say — belongs
 neither in the repository nor in the view model, and this is where it goes.
+
+The `NewsRepository` interface still carries the most weight: it is what lets the paging
+tests run against a fake in milliseconds, and the seam along which the API could be swapped.
 
 **A sealed `NewsError`, not exceptions in the UI.** The screen says different things for
 "you are offline", "your key is missing" and "the service answered with 401", and offers a
@@ -169,6 +173,21 @@ at, because none of them are visible from the API documentation.
 `CancellationException` is rethrown rather than mapped to an error — scrolling away cancels
 an in-flight page, and that is not a failure.
 
+### Crashlytics and Analytics
+
+Wired against a Firebase project; `google-services.json` is committed. `NewsErrorMapper`
+reports non-fatals to Crashlytics for `Unexpected` and `Malformed` only. Analytics is on with
+automatic screen and session tracking.
+
+### Inspecting traffic
+
+Debug builds bundle [Chucker](https://github.com/ChuckerTeam/chucker) — every request is
+captured, posted as a notification and browsable from its own launcher entry. `AppModule`
+calls `networkInspector(context)`, which the debug source set implements with the interceptor
+and the release source set implements as `null`, so nothing of it ships in release.
+
+Needs the notification permission on Android 13+.
+
 ### Deep links and article identity
 
 NewsAPI returns no article id, and the URL is the only field that identifies an article
@@ -191,10 +210,10 @@ local store of every article ever seen, and the second is not worth it for a hea
 - **A `MockWebServer` test over the repository**, driving the real Retrofit stack against
   recorded NewsAPI payloads, including the `[Removed]` and short-page cases now only covered
   at the mapper level.
-- **Article images.** `urlToImage` is parsed and carried through the model but never shown —
-  adding Coil is one dependency and one composable, and it would make the list look like a
-  news app. Left out because the task explicitly does not want dependency bloat or visual
-  polish, and it would not have demonstrated anything new.
+- **Article images.** `urlToImage` is dropped in the mapper rather than carried unused;
+  showing it is one dependency (Coil) and one composable, and it would make the list look
+  like a news app. Left out because the task explicitly does not want dependency bloat or
+  visual polish, and it would not have demonstrated anything new.
 - **Observable connectivity.** Offline is currently detected by a request failing. Watching
   `ConnectivityManager` would let the app re-fetch by itself when the network returns,
   instead of waiting for a pull.
@@ -204,12 +223,9 @@ local store of every article ever seen, and the second is not worth it for a hea
 
 ## What I left out on purpose
 
-- **Firebase Crashlytics/Analytics.** Listed as a bonus, but wiring it needs a Firebase
-  project and a `google-services.json`, and committing one tied to my account would break
-  the build for anyone else and put my project id in the repo. The plumbing is two plugins
-  and an `initialize` call; I would add it against the team's own project.
 - **A multi-module split.** Real value at three teams and a long build, no value at this
-  size. The dependency rule is already enforceable by reading imports.
+  size — though it is what would turn the dependency rule from something to notice into a
+  build error.
 - **Image loading, animations, pixel-level design.** Explicitly not what the task is about.
 - **`content` from the API.** The free plan truncates it to ~200 characters with a
   `[+N chars]` suffix, so showing it would look broken. The detail screen uses `description`

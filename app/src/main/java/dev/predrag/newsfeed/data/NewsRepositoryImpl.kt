@@ -9,7 +9,7 @@ import dev.predrag.newsfeed.data.remote.dto.TopHeadlinesResponseDto
 import dev.predrag.newsfeed.domain.model.Article
 import dev.predrag.newsfeed.domain.model.ArticlePage
 import dev.predrag.newsfeed.domain.repository.NewsRepository
-import dev.predrag.newsfeed.domain.repository.NewsRepository.Companion.FIRST_PAGE
+import dev.predrag.newsfeed.domain.model.ArticlePage.Companion.FIRST_PAGE
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Named
