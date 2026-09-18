@@ -1,3 +1,32 @@
 <resources>
     <string name="app_name">News Feed</string>
+
+    <!-- Article list -->
+    <string name="list_title">Top Headlines</string>
+    <string name="list_empty_title">No articles right now</string>
+    <string name="list_empty_body">The feed came back empty. Pull down to try again.</string>
+    <string name="list_end_of_feed">You are all caught up</string>
+    <string name="list_stale_banner">Showing saved articles from %1$s — they may be out of date</string>
+
+    <!-- Article detail -->
+    <string name="detail_title">Article</string>
+    <string name="detail_back">Back</string>
+    <string name="detail_read_full">Read full article</string>
+    <string name="detail_by_author">By %1$s</string>
+    <string name="detail_missing_title">Article not available</string>
+    <string name="detail_missing_body">This article is no longer loaded. Open the feed and pick it again.</string>
+
+    <!-- Errors -->
+    <string name="error_retry">Retry</string>
+    <string name="error_offline_title">No internet connection</string>
+    <string name="error_offline_body">Check your connection and try again.</string>
+    <string name="error_server_title">The news service is unavailable</string>
+    <string name="error_server_body">Request failed with HTTP %1$d.</string>
+    <string name="error_malformed_title">Unexpected response</string>
+    <string name="error_malformed_body">The news service returned something this app cannot read.</string>
+    <string name="error_unexpected_title">Something went wrong</string>
+    <string name="error_unexpected_body">Please try again.</string>
+    <string name="error_missing_key_title">API key missing</string>
+    <string name="error_missing_key_body">Add NEWS_API_KEY to local.properties and rebuild. See the README.</string>
+    <string name="error_append_failed">Could not load more articles</string>
 </resources>
