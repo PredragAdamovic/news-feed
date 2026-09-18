@@ -1,12 +1,74 @@
 package dev.predrag.newsfeed.ui
 
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import android.content.Intent
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.core.util.Consumer
+import androidx.navigation.NavController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
+import dev.predrag.newsfeed.ui.detail.ArticleDetailScreen
+import dev.predrag.newsfeed.ui.list.ArticleListScreen
+import dev.predrag.newsfeed.ui.navigation.ArticleDetailRoute
+import dev.predrag.newsfeed.ui.navigation.ArticleListRoute
 
 @Composable
 fun NewsFeedApp() {
-    Surface {
-        Text("News Feed")
+    val navController = rememberNavController()
+
+    navController.HandleDeepLinksWhileRunning()
+
+    NavHost(navController = navController, startDestination = ArticleListRoute.PATH) {
+
+        composable(ArticleListRoute.PATH) {
+            ArticleListScreen(
+                onArticleClick = { articleId ->
+                    navController.navigate(ArticleDetailRoute.pathFor(articleId))
+                },
+            )
+        }
+
+        composable(
+            route = ArticleDetailRoute.PATH,
+            arguments = listOf(navArgument(ArticleDetailRoute.ARG_ARTICLE_ID) {
+                type = NavType.StringType
+            }),
+            // Declared on the destination so a link opened from outside still gets a back
+            // stack that lands on the list.
+            deepLinks = listOf(navDeepLink { uriPattern = ArticleDetailRoute.DEEP_LINK }),
+        ) {
+            ArticleDetailScreen(onBack = { navController.navigateUp() })
+        }
+    }
+}
+
+/**
+ * Routes a `myapp://article/{id}` intent that arrives while the app is already running.
+ *
+ * The activity is singleTask, so such an intent reaches [android.app.Activity.onNewIntent]
+ * instead of starting a second copy of the app — but nothing reads it from there, and the
+ * user would sit on whatever screen they were already on. Forwarding it to the NavController
+ * is what actually performs the navigation.
+ *
+ * singleTop is not enough: a link arrives with FLAG_ACTIVITY_NEW_TASK and an intent that does
+ * not match the task's root, and the activity is then rebuilt rather than reused.
+ *
+ * The listener is removed with the composition, so it cannot outlive the NavController it
+ * captures.
+ */
+@Composable
+private fun NavController.HandleDeepLinksWhileRunning() {
+    val activity = LocalActivity.current as? ComponentActivity ?: return
+
+    DisposableEffect(this, activity) {
+        val listener = Consumer<Intent> { intent -> handleDeepLink(intent) }
+        activity.addOnNewIntentListener(listener)
+        onDispose { activity.removeOnNewIntentListener(listener) }
     }
 }
