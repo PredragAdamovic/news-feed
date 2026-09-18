@@ -1,0 +1,8 @@
+# Copy this file to local.properties and fill in your own values.
+#
+# sdk.dir is written by Android Studio; set it by hand if you build from the CLI.
+sdk.dir=/Users/you/Library/Android/sdk
+
+# Free key from https://newsapi.org/register (takes about a minute).
+# Without it the app still runs and shows a setup message instead of the feed.
+NEWS_API_KEY=your_key_here
