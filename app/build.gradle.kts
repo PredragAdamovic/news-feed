@@ -6,6 +6,8 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.crashlytics)
 }
 
 // The key belongs in local.properties (git-ignored) and is read from there when present.
@@ -49,6 +51,8 @@ android {
     }
 
     compileOptions {
+        // java.time on minSdk 24.
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -72,6 +76,10 @@ dependencies {
 
     implementation(libs.navigation.compose)
 
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
+
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
@@ -82,6 +90,13 @@ dependencies {
     implementation(libs.retrofit.serialization)
     implementation(libs.okhttp.logging)
     implementation(libs.kotlinx.serialization.json)
+
+    // HTTP inspector. The real library is debug-only; release gets the no-op, so none of it
+    // ships — see AppModule for how the interceptor is provided.
+    debugImplementation(libs.chucker)
+    releaseImplementation(libs.chucker.no.op)
+
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)

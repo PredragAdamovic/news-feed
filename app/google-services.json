@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "978443028542",
+    "project_id": "newsfeed-15a01",
+    "storage_bucket": "newsfeed-15a01.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:978443028542:android:44d52d6255f226fe45e96f",
+        "android_client_info": {
+          "package_name": "dev.predrag.newsfeed"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDiG-bFrXjWSlS39C8txUc8mYRCKeilpSo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
