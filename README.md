@@ -14,20 +14,8 @@ git clone <this repo>
 cd news-feed
 ```
 
-```bash
-./gradlew assembleDebug        # or open the project in Android Studio and run
-./gradlew testDebugUnitTest    # 18 unit tests
-```
-
-**There is nothing to set up.** A NewsAPI key is checked into `app/build.gradle.kts` so the
-project builds and runs straight after a clone.
-
-That is a deliberate convenience for review, and the comment above the key says as much: a
-key in a repository is a key that leaks, and in a project that shipped, only the
-`local.properties` path below would exist. The key is a free-tier one and will be rotated.
-
-To use your own instead — it takes precedence over the checked-in one — put it in
-`local.properties` in the project root (git-ignored, see `local.properties.example`):
+Add your NewsAPI key to `local.properties` in the project root (the file is git-ignored —
+see `local.properties.example`):
 
 ```properties
 NEWS_API_KEY=your_key_here
@@ -35,20 +23,51 @@ NEWS_API_KEY=your_key_here
 
 A free key takes about a minute at <https://newsapi.org/register>.
 
-The app also handles having no key at all: it detects the empty value before making a
-request and shows a screen saying what to add and where, rather than failing the build or
-showing a blank list.
+```bash
+./gradlew assembleDebug        # or open the project in Android Studio and run
+./gradlew testDebugUnitTest    # 18 unit tests
+```
+
+**Without a key the app still runs.** It starts, detects the empty key before making a
+request, and shows a screen telling you what to add and where. That felt better than a build
+failure for anyone cloning this to look around.
 
 Minimum SDK 24, target 36, compiled against 37.
 
 ### Deep link
 
+`myapp://article/{id}` opens an article directly, whether the app is cold or already running.
+
 ```bash
-adb shell am start -a android.intent.action.VIEW -d "myapp://article/<id>"
+adb shell am start -a android.intent.action.VIEW -d "myapp://article/f3d61d40129a1289a2b7d61b"
+adb shell am start -a android.intent.action.VIEW -d "myapp://article/c6e215c5f6dc5858b56972b7"
+adb shell am start -a android.intent.action.VIEW -d "myapp://article/b85531a1974dd0a850b9870f"
 ```
 
-Article ids are visible in Logcat, or take one from the list after tapping through. See
-[Deep links](#deep-links-and-article-identity) for what happens on a cold start.
+Those three ids were live on 18 September 2026. Top headlines rotate, so by the time you read
+this they will most likely resolve to the "Article not available" screen — which is the
+intended behaviour for an id this install has never loaded, not a failure. See
+[Deep links and article identity](#deep-links-and-article-identity).
+
+**For an id that works right now**, derive it from any article url in the feed. The id is
+the first 12 bytes of the url's SHA-256, which is exactly what `ArticleMapper.idFor` does:
+
+```bash
+printf %s "https://www.example.com/the-article-url" | shasum -a 256 | cut -c1-24
+```
+
+`adb` is not the same thing as a real link click: it runs as the shell user and always adds
+`FLAG_ACTIVITY_NEW_TASK`. To exercise the path a user takes, put the link on a page and tap
+it — that is how the running-app case was verified:
+
+```html
+<a href="myapp://article/f3d61d40129a1289a2b7d61b">Open article</a>
+```
+
+The scheme is a custom one because the task specified it. In production this would be an App
+Link on an `https://` domain, verified through `assetlinks.json`, so that no other app can
+claim it and no chooser appears — but an unverified `https://` link behaves worse than a
+custom scheme, so there is no half-measure worth shipping here.
 
 ---
 
@@ -138,28 +157,6 @@ at, because none of them are visible from the API documentation.
 `CancellationException` is rethrown rather than mapped to an error — scrolling away cancels
 an in-flight page, and that is not a failure.
 
-### Crashlytics and Analytics
-
-Both are wired against a Firebase project (`google-services.json` is committed — it holds
-the project id and an Android API key, which are public by design, not the kind of secret
-`local.properties` is for).
-
-Crashlytics is not left at "initialised": `NewsErrorMapper` reports non-fatals, but **only**
-for `Unexpected` and `Malformed`. Being offline or getting a 429 is a condition the app
-already handles and shows the user — sending those would bury real problems under noise.
-
-Analytics is on with automatic screen and session tracking; no custom events, because I had
-nothing to measure that would not have been decoration.
-
-### Inspecting traffic
-
-Debug builds bundle [Chucker](https://github.com/ChuckerTeam/chucker): every request is
-captured, posted as a notification and browsable from its own launcher entry. Release builds
-get `library-no-op`, so none of it — no classes, no provider, no activity — ships.
-
-It needs the notification permission on Android 13+; the transaction list is also reachable
-directly from the launcher icon if the notification is dismissed.
-
 ### Deep links and article identity
 
 NewsAPI returns no article id, and the URL is the only field that identifies an article
@@ -182,10 +179,10 @@ local store of every article ever seen, and the second is not worth it for a hea
 - **A `MockWebServer` test over the repository**, driving the real Retrofit stack against
   recorded NewsAPI payloads, including the `[Removed]` and short-page cases now only covered
   at the mapper level.
-- **Article images.** `urlToImage` is dropped in the mapper rather than carried unused;
-  showing it is one dependency (Coil) and one composable, and it would make the list look
-  like a news app. Left out because the task explicitly does not want dependency bloat or
-  visual polish, and it would not have demonstrated anything new.
+- **Article images.** `urlToImage` is parsed and carried through the model but never shown —
+  adding Coil is one dependency and one composable, and it would make the list look like a
+  news app. Left out because the task explicitly does not want dependency bloat or visual
+  polish, and it would not have demonstrated anything new.
 - **Observable connectivity.** Offline is currently detected by a request failing. Watching
   `ConnectivityManager` would let the app re-fetch by itself when the network returns,
   instead of waiting for a pull.
@@ -195,6 +192,10 @@ local store of every article ever seen, and the second is not worth it for a hea
 
 ## What I left out on purpose
 
+- **Firebase Crashlytics/Analytics.** Listed as a bonus, but wiring it needs a Firebase
+  project and a `google-services.json`, and committing one tied to my account would break
+  the build for anyone else and put my project id in the repo. The plumbing is two plugins
+  and an `initialize` call; I would add it against the team's own project.
 - **Use-case classes.** Explained above: two one-line operations.
 - **A multi-module split.** Same reasoning — real value at three teams and a long build, no
   value at this size.
