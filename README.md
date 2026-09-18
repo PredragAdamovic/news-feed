@@ -34,40 +34,47 @@ failure for anyone cloning this to look around.
 
 Minimum SDK 24, target 36, compiled against 37.
 
-### Deep link
+### Deep links
 
-`myapp://article/{id}` opens an article directly, whether the app is cold or already running.
+Two forms reach the same destination.
+
+**`myapp://article/{id}`** — the scheme the task asked for. A custom scheme needs no setup,
+but it cannot be sent to anyone: messengers only linkify things that look like URLs.
 
 ```bash
-adb shell am start -a android.intent.action.VIEW -d "myapp://article/f3d61d40129a1289a2b7d61b"
-adb shell am start -a android.intent.action.VIEW -d "myapp://article/c6e215c5f6dc5858b56972b7"
-adb shell am start -a android.intent.action.VIEW -d "myapp://article/b85531a1974dd0a850b9870f"
+adb shell am start -a android.intent.action.VIEW -d "myapp://article/<id>"
 ```
 
-Those three ids were live on 18 September 2026. Top headlines rotate, so by the time you read
-this they will most likely resolve to the "Article not available" screen — which is the
-intended behaviour for an id this install has never loaded, not a failure. See
-[Deep links and article identity](#deep-links-and-article-identity).
+**`https://predragadamovic.github.io/news-feed/article/{id}`** — the shareable form, behind
+the share action on the detail screen. This is a verified App Link: the manifest filter
+carries `autoVerify="true"`, and the host serves
+[`/.well-known/assetlinks.json`](https://predragadamovic.github.io/.well-known/assetlinks.json)
+naming this package and its signing certificate.
 
-**For an id that works right now**, derive it from any article url in the feed. The id is
-the first 12 bytes of the url's SHA-256, which is exactly what `ArticleMapper.idFor` does:
+The verification is not decoration. Since Android 12 an unverified `http(s)` filter never
+opens the app at all — the link goes straight to the browser, with no chooser. Confirmed on
+an Android 14 device:
+
+```
+$ adb shell pm get-app-links dev.predrag.newsfeed
+    Domain verification state:
+      predragadamovic.github.io: verified
+```
+
+**For an id that resolves right now**, derive it from any article url in the feed — the id is
+the first 12 bytes of the url's SHA-256, which is what `ArticleMapper.idFor` does:
 
 ```bash
 printf %s "https://www.example.com/the-article-url" | shasum -a 256 | cut -c1-24
 ```
 
-`adb` is not the same thing as a real link click: it runs as the shell user and always adds
-`FLAG_ACTIVITY_NEW_TASK`. To exercise the path a user takes, put the link on a page and tap
-it — that is how the running-app case was verified:
+An id this install has never loaded gets the "Article not available" screen rather than a
+spinner that never resolves; see
+[Deep links and article identity](#deep-links-and-article-identity).
 
-```html
-<a href="myapp://article/f3d61d40129a1289a2b7d61b">Open article</a>
-```
-
-The scheme is a custom one because the task specified it. In production this would be an App
-Link on an `https://` domain, verified through `assetlinks.json`, so that no other app can
-claim it and no chooser appears — but an unverified `https://` link behaves worse than a
-custom scheme, so there is no half-measure worth shipping here.
+Note that `adb shell am start` is not the same as a real click — it runs as the shell user and
+always adds `FLAG_ACTIVITY_NEW_TASK`. The already-running case was verified by tapping a link
+rather than by `adb`.
 
 ---
 
@@ -166,7 +173,7 @@ an in-flight page, and that is not a failure.
 
 NewsAPI returns no article id, and the URL is the only field that identifies an article
 across pages and launches. The mapper hashes it (SHA-256, truncated) into something short
-and safe in a `myapp://article/{id}` path.
+and safe in a link path — the same id serves both the custom scheme and the App Link.
 
 Because there is no by-id endpoint, the detail screen resolves an id against what the
 session has already loaded, then against the cache. A deep link naming an article this

@@ -11,6 +11,7 @@
     <!-- Article detail -->
     <string name="detail_title">Article</string>
     <string name="detail_back">Back</string>
+    <string name="detail_share">Share</string>
     <string name="detail_read_full">Read full article</string>
     <string name="detail_by_author">By %1$s</string>
     <string name="detail_missing_title">Article not available</string>

@@ -22,3 +22,12 @@ fun Context.openArticleUrl(url: String) {
         }
     }
 }
+
+fun Context.shareArticle(title: String, link: String) {
+    val send = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_SUBJECT, title)
+        putExtra(Intent.EXTRA_TEXT, "$title\n\n$link")
+    }
+    startActivity(Intent.createChooser(send, null))
+}

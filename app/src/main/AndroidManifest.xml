@@ -31,6 +31,18 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="myapp" android:host="article" />
             </intent-filter>
+
+            <!-- Shareable App Link. autoVerify checks /.well-known/assetlinks.json on the
+                 host at install time; unverified, Android 12+ would open the browser. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="predragadamovic.github.io"
+                    android:pathPrefix="/news-feed/article/" />
+            </intent-filter>
         </activity>
     </application>
 

@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -31,7 +32,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.predrag.newsfeed.R
 import dev.predrag.newsfeed.domain.model.Article
 import dev.predrag.newsfeed.ui.common.FullScreenLoading
+import dev.predrag.newsfeed.ui.navigation.ArticleDetailRoute
 import dev.predrag.newsfeed.ui.util.openArticleUrl
+import dev.predrag.newsfeed.ui.util.shareArticle
 import dev.predrag.newsfeed.ui.util.toDisplayDate
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,6 +44,7 @@ fun ArticleDetailScreen(
     viewModel: ArticleDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -52,6 +56,23 @@ fun ArticleDetailScreen(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.detail_back),
                         )
+                    }
+                },
+                actions = {
+                    state.article?.let { article ->
+                        IconButton(
+                            onClick = {
+                                context.shareArticle(
+                                    title = article.title,
+                                    link = ArticleDetailRoute.webUrlFor(article.id),
+                                )
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = stringResource(R.string.detail_share),
+                            )
+                        }
                     }
                 },
             )

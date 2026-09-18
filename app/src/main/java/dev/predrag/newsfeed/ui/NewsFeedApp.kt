@@ -41,7 +41,10 @@ fun NewsFeedApp() {
             }),
             // Declared on the destination so a link opened from outside still gets a back
             // stack that lands on the list.
-            deepLinks = listOf(navDeepLink { uriPattern = ArticleDetailRoute.DEEP_LINK }),
+            deepLinks = listOf(
+                navDeepLink { uriPattern = ArticleDetailRoute.DEEP_LINK },
+                navDeepLink { uriPattern = ArticleDetailRoute.WEB_LINK },
+            ),
         ) {
             ArticleDetailScreen(onBack = { navController.navigateUp() })
         }
